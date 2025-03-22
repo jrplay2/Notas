@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicativo de Notas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .editor {
+            flex: 2;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 85vh;
+        }
+        
+        .historico {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            height: 85vh;
+            overflow-y: auto;
+        }
+        
+        h1, h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+        
+        .controles {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex: 1;
+            font-size: 16px;
+        }
+        
+        button {
+            padding: 10px 15px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #3367d6;
+        }
+        
+        .nota-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+        
+        .nota-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .nota-item h3 {
+            margin-bottom: 5px;
+            color: #333;
+            padding-right: 25px;
+        }
+        
+        .nota-item p {
+            color: #666;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .excluir-nota {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: #ff5252;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        .imagem-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .imagem-preview {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .imagem-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .remover-img {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: rgba(255, 0, 0, 0.7);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .mensagem {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .sucesso {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .erro {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .aviso {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .botoes-exportar {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-secundario {
+            background-color: #6c757d;
+        }
+        
+        .btn-secundario:hover {
+            background-color: #5a6268;
+        }
+        
+        pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow: auto;
+            display: none;
+            margin-top: 15px;
+            border: 1px solid #ddd;
+        }
+        
+        #dados-exportados {
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Minhas Notas</h1>
+    
+    <div class="aviso">
+        <p><strong>Nota:</strong> Para usar este aplicativo fora do ambiente atual (onde há restrições de armazenamento), salve o código completo como arquivo HTML e abra-o localmente em seu navegador.</p>
+        <div class="botoes-exportar">
+            <button id="exportar-codigo" class="btn-secundario">Exportar Código HTML</button>
+            <button id="exportar-dados" class="btn-secundario">Exportar Dados das Notas</button>
+        </div>
+        <pre id="dados-exportados"></pre>
+    </div>
+    
+    <div class="container">
+        <div class="editor">
+            <div class="controles">
+                <input type="text" id="titulo-nota" placeholder="Título da nota">
+                <button id="salvar-nota">Salvar Nota</button>
+                <input type="file" id="imagem-input" accept="image/*">
+                <button id="adicionar-imagem">Enviar Imagem</button>
+            </div>
+            
+            <div class="imagem-container" id="imagem-container"></div>
+            
+            <textarea id="conteudo-nota" placeholder="Digite sua nota aqui..."></textarea>
+            
+            <div class="mensagem" id="mensagem"></div>
+        </div>
+        
+        <div class="historico">
+            <h2>Histórico de Notas</h2>
+            <div id="lista-notas"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Elementos do DOM
+        const tituloInput = document.getElementById('titulo-nota');
+        const conteudoTextarea = document.getElementById('conteudo-nota');
+        const salvarBtn = document.getElementById('salvar-nota');
+        const adicionarImagemBtn = document.getElementById('adicionar-imagem');
+        const imagemInput = document.getElementById('imagem-input');
+        const imagemContainer = document.getElementById('imagem-container');
+        const listaNotas = document.getElementById('lista-notas');
+        const mensagemDiv = document.getElementById('mensagem');
+        const exportarCodigoBtn = document.getElementById('exportar-codigo');
+        const exportarDadosBtn = document.getElementById('exportar-dados');
+        const dadosExportadosArea = document.getElementById('dados-exportados');
+        
+        // Armazenamento das imagens para a nota atual
+        let imagensAtuais = [];
+        
+        // ID da nota sendo editada (null para nova nota)
+        let notaEditandoId = null;
+        
+        // Array para armazenar notas (em memória)
+        let notasArmazenadas = [];
+        
+        // Exemplos de notas para demonstração
+        const exemplosNotas = [
+            {
+                titulo: "Bem-vindo ao Aplicativo de Notas",
+                conteudo: "Este é um exemplo de nota. Você pode criar, editar e salvar suas próprias notas. Clique nesta nota para editá-la ou clique no botão 'Salvar Nota' para criar uma nova.",
+                imagens: [],
+                dataModificacao: new Date().toLocaleString()
+            },
+            {
+                titulo: "Como usar este aplicativo",
+                conteudo: "1. Digite um título para sua nota\n2. Escreva o conteúdo da nota\n3. Adicione imagens se desejar\n4. Clique em 'Salvar Nota'\n\nVocê pode editar ou excluir notas a qualquer momento.",
+                imagens: [],
+                dataModificacao: new Date().toLocaleString()
+            }
+        ];
+        
+        // Carregar exemplos na inicialização
+        notasArmazenadas = [...exemplosNotas];
+        
+        // Tenta usar localStorage se estiver disponível
+        function usarLocalStorage() {
+            try {
+                localStorage.setItem('teste', 'teste');
+                localStorage.removeItem('teste');
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        const podeSalvarLocalStorage = usarLocalStorage();
+        
+        // Carrega as notas (do localStorage se disponível, ou da memória)
+        function carregarNotas() {
+            if (podeSalvarLocalStorage) {
+                try {
+                    const notas = localStorage.getItem('notas');
+                    if (notas) {
+                        notasArmazenadas = JSON.parse(notas);
+                    }
+                } catch (e) {
+                    console.error("Erro ao carregar do localStorage:", e);
+                }
+            }
+            return notasArmazenadas;
+        }
+        
+        // Salva as notas (no localStorage se disponível, ou apenas na memória)
+        function salvarNotas(notas) {
+            notasArmazenadas = notas;
+            if (podeSalvarLocalStorage) {
+                try {
+                    localStorage.setItem('notas', JSON.stringify(notas));
+                } catch (e) {
+                    console.error("Erro ao salvar no localStorage:", e);
+                }
+            }
+        }
+        
+        // Mostra a lista de notas no histórico
+        function mostrarNotasHistorico() {
+            const notas = carregarNotas();
+            listaNotas.innerHTML = '';
+            
+            if (notas.length === 0) {
+                listaNotas.innerHTML = '<p>Nenhuma nota salva ainda.</p>';
+                return;
+            }
+            
+            notas.forEach((nota, index) => {
+                const notaEl = document.createElement('div');
+                notaEl.className = 'nota-item';
+                notaEl.innerHTML = `
+                    <h3>${nota.titulo}</h3>
+                    <p>${nota.conteudo.substring(0, 60)}${nota.conteudo.length > 60 ? '...' : ''}</p>
+                    <span class="excluir-nota">&times;</span>
+                `;
+                
+                notaEl.querySelector('.excluir-nota').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    excluirNota(index);
+                });
+                
+                notaEl.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('excluir-nota')) {
+                        carregarNota(index);
+                    }
+                });
+                
+                listaNotas.appendChild(notaEl);
+            });
+        }
+        
+        // Carrega uma nota para edição
+        function carregarNota(index) {
+            const notas = carregarNotas();
+            const nota = notas[index];
+            
+            tituloInput.value = nota.titulo;
+            conteudoTextarea.value = nota.conteudo;
+            notaEditandoId = index;
+            
+            // Carrega as imagens
+            imagensAtuais = nota.imagens || [];
+            atualizarPreviewImagens();
+            
+            mostrarMensagem('Nota carregada para edição', 'sucesso');
+        }
+        
+        // Exclui uma nota
+        function excluirNota(index) {
+            const notas = carregarNotas();
+            notas.splice(index, 1);
+            salvarNotas(notas);
+            mostrarNotasHistorico();
+            
+            if (notaEditandoId === index) {
+                limparFormulario();
+            } else if (notaEditandoId > index) {
+                notaEditandoId--;
+            }
+            
+            mostrarMensagem('Nota excluída', 'sucesso');
+        }
+        
+        // Salva uma nota (nova ou editada)
+        function salvarNota() {
+            const titulo = tituloInput.value.trim();
+            const conteudo = conteudoTextarea.value.trim();
+            
+            if (!titulo) {
+                mostrarMensagem('Por favor, adicione um título para sua nota', 'erro');
+                return;
+            }
+            
+            const notas = carregarNotas();
+            const novaNota = {
+                titulo,
+                conteudo,
+                imagens: imagensAtuais,
+                dataModificacao: new Date().toLocaleString()
+            };
+            
+            if (notaEditandoId !== null) {
+                // Editando uma nota existente
+                notas[notaEditandoId] = novaNota;
+                mostrarMensagem('Nota atualizada com sucesso!', 'sucesso');
+            } else {
+                // Criando uma nova nota
+                notas.push(novaNota);
+                mostrarMensagem('Nota salva com sucesso!', 'sucesso');
+            }
+            
+            salvarNotas(notas);
+            mostrarNotasHistorico();
+            limparFormulario();
+        }
+        
+        // Limpa o formulário para uma nova nota
+        function limparFormulario() {
+            tituloInput.value = '';
+            conteudoTextarea.value = '';
+            notaEditandoId = null;
+            imagensAtuais = [];
+            atualizarPreviewImagens();
+        }
+        
+        // Função para adicionar imagem
+        function adicionarImagem() {
+            imagemInput.click();
+        }
+        
+        // Função para atualizar preview de imagens
+        function atualizarPreviewImagens() {
+            imagemContainer.innerHTML = '';
+            
+            imagensAtuais.forEach((imagem, index) => {
+                const imagemDiv = document.createElement('div');
+                imagemDiv.className = 'imagem-preview';
+                
+                const img = document.createElement('img');
+                img.src = imagem;
+                
+                const removerBtn = document.createElement('div');
+                removerBtn.className = 'remover-img';
+                removerBtn.textContent = 'X';
+                removerBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removerImagem(index);
+                });
+                
+                imagemDiv.appendChild(img);
+                imagemDiv.appendChild(removerBtn);
+                imagemContainer.appendChild(imagemDiv);
+            });
+        }
+        
+        // Remover uma imagem
+        function removerImagem(index) {
+            imagensAtuais.splice(index, 1);
+            atualizarPreviewImagens();
+        }
+        
+        // Mostrar mensagem temporária
+        function mostrarMensagem(texto, tipo) {
+            mensagemDiv.textContent = texto;
+            mensagemDiv.className = `mensagem ${tipo}`;
+            mensagemDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                mensagemDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Exportar código HTML
+        function exportarCodigo() {
+            const htmlCompleto = document.documentElement.outerHTML;
+            mostrarCodigoExportado(htmlCompleto);
+            mostrarMensagem('Código HTML exportado. Copie-o e salve em um arquivo .html', 'sucesso');
+        }
+        
+        // Exportar dados das notas
+        function exportarDados() {
+            const notas = carregarNotas();
+            const dadosJSON = JSON.stringify(notas, null, 2);
+            mostrarCodigoExportado(dadosJSON);
+            mostrarMensagem('Dados das notas exportados em formato JSON', 'sucesso');
+        }
+        
+        // Mostrar código exportado
+        function mostrarCodigoExportado(codigo) {
+            dadosExportadosArea.textContent = codigo;
+            dadosExportadosArea.style.display = 'block';
+        }
+        
+        // Event Listeners
+        salvarBtn.addEventListener('click', salvarNota);
+        adicionarImagemBtn.addEventListener('click', adicionarImagem);
+        exportarCodigoBtn.addEventListener('click', exportarCodigo);
+        exportarDadosBtn.addEventListener('click', exportarDados);
+        
+        imagemInput.addEventListener('change', (e) => {
+            const arquivo = e.target.files[0];
+            if (!arquivo) return;
+            
+            if (!arquivo.type.match('image.*')) {
+                mostrarMensagem('Por favor, selecione apenas arquivos de imagem', 'erro');
+                return;
+            }
+            
+            const leitor = new FileReader();
+            leitor.onload = function(evento) {
+                const imagemData = evento.target.result;
+                imagensAtuais.push(imagemData);
+                atualizarPreviewImagens();
+                mostrarMensagem('Imagem adicionada com sucesso!', 'sucesso');
+            };
+            leitor.readAsDataURL(arquivo);
+        });
+        
+        // Inicia a aplicação
+        mostrarNotasHistorico();
+    </script>
+</body>
+</html>
